@@ -23,8 +23,11 @@ _testmain.go
 *.test
 *.prof
 
+.vscode
+
 dockyard
 conf/runtime.conf
 conf/pool.json
 log/*
 data/*
+tools/aci/dockyard-latest-linux-amd64.*

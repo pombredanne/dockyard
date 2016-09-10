@@ -1,3 +1,19 @@
+/*
+Copyright 2015 The ContainerOps Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package cmd
 
 import (
@@ -7,12 +23,13 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/dockyard/models"
+	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/dockyard/utils"
 	"github.com/containerops/dockyard/web"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
 )
 
 var CmdWeb = cli.Command{
@@ -34,7 +51,14 @@ var CmdWeb = cli.Command{
 	},
 }
 
-func runWeb(c *cli.Context) {
+func startServerService() {
+	setting.LoadServerConfig()
+	models.OpenDatabase()
+}
+
+func runWeb(c *cli.Context) error {
+	startServerService()
+
 	m := macaron.New()
 
 	//Set Macaron Web Middleware And Routers
@@ -44,14 +68,16 @@ func runWeb(c *cli.Context) {
 	case "http":
 		listenaddr := fmt.Sprintf("%s:%d", c.String("address"), c.Int("port"))
 		if err := http.ListenAndServe(listenaddr, m); err != nil {
-			fmt.Printf("Start Dockyard http service error: %v", err.Error())
+			fmt.Printf("Start Dockyard http service error: %v\n", err.Error())
+			return err
 		}
 		break
 	case "https":
 		listenaddr := fmt.Sprintf("%s:443", c.String("address"))
 		server := &http.Server{Addr: listenaddr, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS10}, Handler: m}
-		if err := server.ListenAndServeTLS(setting.HttpsCertFile, setting.HttpsKeyFile); err != nil {
-			fmt.Printf("Start Dockyard https service error: %v", err.Error())
+		if err := server.ListenAndServeTLS(setting.HTTPSCertFile, setting.HTTPSKeyFile); err != nil {
+			fmt.Printf("Start Dockyard https service error: %v\n", err.Error())
+			return err
 		}
 		break
 	case "unix":
@@ -61,15 +87,19 @@ func runWeb(c *cli.Context) {
 		}
 
 		if listener, err := net.Listen("unix", listenaddr); err != nil {
-			fmt.Printf("Start Dockyard unix socket error: %v", err.Error())
+			fmt.Printf("Start Dockyard unix socket error: %v\n", err.Error())
+			return err
 		} else {
 			server := &http.Server{Handler: m}
 			if err := server.Serve(listener); err != nil {
-				fmt.Printf("Start Dockyard unix socket error: %v", err.Error())
+				fmt.Printf("Start Dockyard unix socket error: %v\n", err.Error())
+				return err
 			}
 		}
 		break
 	default:
 		break
 	}
+
+	return nil
 }

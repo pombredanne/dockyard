@@ -1,33 +1,41 @@
+/*
+Copyright 2015 The ContainerOps Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package middleware
 
 import (
-	"fmt"
+	"time"
 
-	"github.com/astaxie/beego/logs"
+	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
+
+	"github.com/containerops/dockyard/setting"
 )
 
-var Log *logs.BeeLogger
-
-func InitLog(runmode, path string) {
-	Log = logs.NewLogger(10000)
-
-	if runmode == "dev" {
-		Log.SetLogger("console", "")
-	}
-
-	Log.SetLogger("file", fmt.Sprintf("{\"filename\":\"%s\"}", path))
-
-}
-
-func logger(runmode string) macaron.Handler {
+func logger() macaron.Handler {
 	return func(ctx *macaron.Context) {
-		if runmode == "dev" {
-			Log.Trace("")
-			Log.Trace("----------------------------------------------------------------------------------")
+		if setting.RunMode == "dev" {
+			log.Info("------------------------------------------------------------------------------")
+			log.Info(time.Now().String())
 		}
 
-		Log.Trace("[%s] [%s]", ctx.Req.Method, ctx.Req.RequestURI)
-		Log.Trace("[Header] %v", ctx.Req.Header)
+		log.WithFields(log.Fields{
+			"Method": ctx.Req.Method,
+			"URL":    ctx.Req.RequestURI,
+		}).Info(ctx.Req.Header)
+
 	}
 }

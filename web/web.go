@@ -1,51 +1,32 @@
+/*
+Copyright 2015 The ContainerOps Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package web
 
 import (
-	"fmt"
-	"os"
-
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/middleware"
 	"github.com/containerops/dockyard/router"
-	"github.com/containerops/wrench/db"
-	"github.com/containerops/wrench/setting"
 )
 
 func SetDockyardMacaron(m *macaron.Macaron) {
-	//Setting Database
-	if err := db.InitDB(setting.DBURI, setting.DBPasswd, setting.DBDB); err != nil {
-		fmt.Printf("Connect Database error %s", err.Error())
-	}
-
-	if err := backend.InitBackend(); err != nil {
-		fmt.Printf("Init backend error %s", err.Error())
-	}
-
-	if err := middleware.Initfunc(); err != nil {
-		fmt.Printf("Init middleware error %s", err.Error())
-	}
-
 	//Setting Middleware
 	middleware.SetMiddlewares(m)
 
 	//Setting Router
 	router.SetRouters(m)
-
-	//Create acpool to store aci/asc/pubkey
-	err := func() error {
-		acpoolname := setting.ImagePath + "/acpool"
-		if _, err := os.Stat(acpoolname); err == nil {
-			return nil
-		}
-
-		if err := os.Mkdir(acpoolname, 0755); err != nil {
-			return err
-		}
-		return nil
-	}()
-	if err != nil {
-		fmt.Printf("Create acpool for rkt failed %s", err.Error())
-	}
 }
